@@ -280,6 +280,19 @@ public class XWalkViewInternal extends android.widget.FrameLayout {
      */
     @XWalkAPI
     public static final int RELOAD_IGNORE_CACHE = 1;
+    /**
+     * SurfaceView is the default compositing surface which has a bit performance advantage,
+     * such as it has less latency and uses less memory.
+     * @since 7.0
+     */
+    @XWalkAPI
+    public static final String SURFACE_VIEW = "SurfaceView";
+    /**
+     * Use TextureView as compositing surface which supports animation on the View.
+     * @since 7.0
+     */
+    @XWalkAPI
+    public static final String TEXTURE_VIEW = "TextureView";
 
     // The moment when the XWalkViewBridge is added to the XWalkView, the screen flashes black. The
     // reason is when the SurfaceView appears in the window the fist time, it requests the window's
@@ -327,8 +340,9 @@ public class XWalkViewInternal extends android.widget.FrameLayout {
     @XWalkAPI(preWrapperLines = {
                   "        super(${param1}, ${param2});",
                   "        if (isInEditMode()) return;",
-                  "        mAnimatable = ${param2}.getAttributeValue(",
-                  "                XWALK_ATTRS_NAMESPACE, ANIMATABLE);",
+                  "        if (${param2} != null)",
+                  "            mAnimatable = ${param2}.getAttributeValue(",
+                  "                    XWALK_ATTRS_NAMESPACE, ANIMATABLE);",
                   "        SurfaceView surfaceView = new SurfaceView(${param1});",
                   "        surfaceView.setLayoutParams(new ViewGroup.LayoutParams(0, 0));",
                   "        addView(surfaceView);"},
@@ -339,7 +353,11 @@ public class XWalkViewInternal extends android.widget.FrameLayout {
                   "        removeViewAt(0);",
                   "        new org.xwalk.core.extension.XWalkExternalExtensionManagerImpl(this);"},
               postBridgeLines = {
-                  "        String animatable = (String) new ReflectField(wrapper, \"mAnimatable\").get();",
+                  "        String animatable = null;",
+                  "        try {",
+                  "            animatable = (String) new ReflectField(wrapper, \"mAnimatable\").get();",
+                  "        } catch (RuntimeException e) {",
+                  "        }",
                   "        initXWalkContent(getContext(), animatable);"})
     public XWalkViewInternal(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -1838,5 +1856,17 @@ public class XWalkViewInternal extends android.widget.FrameLayout {
         if (mContent == null) return;
         checkThreadSafety();
         mContent.clearMatches();
+    }
+
+    /**
+     * Gets the compositing surface type of this XWalkView.
+     * @return SurfaceView or TextureView
+     * @since 7.0
+     */
+    @XWalkAPI
+    public String getCompositingSurfaceType() {
+        checkThreadSafety();
+        if (mContent == null) return null;
+        return mContent.getCompositingSurfaceType();
     }
 }
